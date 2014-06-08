@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mobile-pc-filetransfer", "mobile-pc-filetransfer.vcxproj", "{C760F22A-6DC3-48EE-84EC-F1AF186BA47C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_pcserver", "test_pcserver\test_pcserver.vcxproj", "{3367A3B5-6562-4DA6-A6A1-497F01D384E2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C760F22A-6DC3-48EE-84EC-F1AF186BA47C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C760F22A-6DC3-48EE-84EC-F1AF186BA47C}.Debug|Win32.Build.0 = Debug|Win32
+		{C760F22A-6DC3-48EE-84EC-F1AF186BA47C}.Release|Win32.ActiveCfg = Release|Win32
+		{C760F22A-6DC3-48EE-84EC-F1AF186BA47C}.Release|Win32.Build.0 = Release|Win32
+		{3367A3B5-6562-4DA6-A6A1-497F01D384E2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3367A3B5-6562-4DA6-A6A1-497F01D384E2}.Debug|Win32.Build.0 = Debug|Win32
+		{3367A3B5-6562-4DA6-A6A1-497F01D384E2}.Release|Win32.ActiveCfg = Release|Win32
+		{3367A3B5-6562-4DA6-A6A1-497F01D384E2}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
