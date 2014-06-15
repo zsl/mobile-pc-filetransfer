@@ -225,8 +225,10 @@ class tcp_server
 {
 public:
 	tcp_server(asio::io_service& ioservice, unsigned short port)
-		: m_acceptor(ioservice, asio::ip::tcp::v4())
+		: m_acceptor(ioservice)
 	{
+		m_acceptor.open(asio::ip::tcp::v4());
+		m_acceptor.set_option(asio::socket_base::reuse_address(true));
 		m_acceptor.bind(asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port));
 		m_acceptor.listen();
 		start_acept();

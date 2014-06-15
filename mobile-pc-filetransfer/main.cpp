@@ -152,8 +152,10 @@ private:
 			}
 			else
 			{
-				std::cerr << "catch err in handle_receive\n";
+				std::cerr << "catch err in handle_receive:" << err << std::endl;
 			}
+
+			start_receive();
 		}
 	}
 
