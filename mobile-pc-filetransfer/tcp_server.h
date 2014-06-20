@@ -244,8 +244,13 @@ private:
 			{
 				if (!error)
 				{
+                    std::cout << "accept a connect.\n";
 					new_connection->start_recv();
 				}
+                else
+                {
+                    std::cerr << "accept error: " << error << std::endl;
+                }
 
 				start_acept();
 			}
