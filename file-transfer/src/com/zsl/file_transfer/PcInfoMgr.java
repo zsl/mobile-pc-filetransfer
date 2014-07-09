@@ -3,18 +3,20 @@ package com.zsl.file_transfer;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.SocketAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
+import java.nio.channels.*;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 import org.json.JSONException;
@@ -23,13 +25,49 @@ import org.json.JSONObject;
 public class PcInfoMgr implements IoHandler {
 	private DatagramChannel udpchannel;
 	private InetSocketAddress endpoint = new InetSocketAddress("225.0.0.1", 10000);
+	
+	private Map<String, tcpclient> connections = new HashMap<String, tcpclient>();
 
 	private Selector selector;
+	
+	private String waitPcName;
 	
 	PcInfoMgr(){
 
 	}
 
+	void connect(final String pcname){
+	    new Thread(){
+	        public void run(){
+	            try {
+	                
+	                waitPcName = pcname;
+	                
+	                InetAddress addr = InetAddress.getByName(pcname);
+	                SocketAddress svrendpoint = new InetSocketAddress(addr, 10000);
+	                
+	                tcpclient client = new tcpclient(selector);
+	                
+	                client.connect(svrendpoint);
+	                
+                    connections.put(pcname, client);
+                    
+	            } catch (IOException e) {
+	                // TODO Auto-generated catch block
+	                e.printStackTrace();
+	            }
+
+	        }
+	    }.start();
+	}
+	
+	void ls(String pcname, String dir)
+	{
+	    if (connections.containsKey(pcname)){
+	        connections.get(pcname).ls(dir);
+	    }
+	}
+	
 	void run()
 	{
 		new Thread(){
@@ -84,6 +122,8 @@ public class PcInfoMgr implements IoHandler {
 								else if (selectionKey.isConnectable()){
 									handler.handle_connect();
 								}
+								
+								it.remove();
 							}
 
 						}
@@ -134,12 +174,12 @@ public class PcInfoMgr implements IoHandler {
 	@Override
 	public void handle_write() {
 		// TODO Auto-generated method stub
-		
+		System.out.println("handle write");
 	}
 
 	@Override
 	public void handle_connect() {
 		// TODO Auto-generated method stub
-		
+		System.out.println("handle_connect");
 	}
 }

@@ -6,5 +6,7 @@
     <string name="hello_world">Hello world!</string>
     <string name="btn_search_computer">搜索电脑</string>
     <string name="title_activity_computer">电脑列表</string>
+    <string name="btn_connect_computer">连接</string>
+    <string name="title_activity_list_dir">ListDirActivity</string>
 
 </resources>

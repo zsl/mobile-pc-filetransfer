@@ -18,4 +18,27 @@
         android:layout_marginTop="191dp"
         android:text="@string/btn_search_computer" />
 
+    <AutoCompleteTextView
+        android:id="@+id/edit_ip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="44dp"
+        android:hint="输入电脑名或ip"
+        android:completionHint="最近输入的条目"
+        android:ems="10" >
+
+        <requestFocus />
+    </AutoCompleteTextView>
+
+    <Button
+        android:id="@+id/btn_connect_computer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/edit_ip"
+        android:layout_alignTop="@+id/edit_ip"
+        android:layout_toRightOf="@+id/edit_ip"
+        android:text="@string/btn_connect_computer" />
+
 </RelativeLayout>
