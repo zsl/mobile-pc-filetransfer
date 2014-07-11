@@ -6,6 +6,10 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/detail/utf8_codecvt_facet.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/code_converter.hpp>
+#include <boost/locale.hpp>
 
 #include <memory>
 #include <functional>
@@ -17,6 +21,10 @@
 namespace asio = boost::asio;
 namespace property_tree = boost::property_tree;
 namespace filesystem = boost::filesystem;
+namespace iostreams = boost::iostreams;
+namespace locale = boost::locale;
+
+using filesystem::detail::utf8_codecvt_facet;
 
 class tcp_connection
 	: public std::enable_shared_from_this<tcp_connection>
@@ -76,60 +84,65 @@ private:
 		{
 			std::istream inputstream(&m_buf);
 
-			property_tree::ptree cmdtree;
-			property_tree::read_json(inputstream, cmdtree);
+            typedef iostreams::code_converter<std::istream, utf8_codecvt_facet> InCodeConverterDevice;
+            iostreams::stream<InCodeConverterDevice> stream(inputstream);
 
-			std::string cmd = cmdtree.get<std::string>("type", "");
+			property_tree::wptree cmdtree;
+			property_tree::read_json(stream, cmdtree);
 
-			property_tree::ptree resultptree;
-			if (cmd == "pcinfo")
+			std::wstring cmd = cmdtree.get<std::wstring>(L"type", L"");
+
+			property_tree::wptree resultptree;
+			if (cmd == L"pcinfo")
 			{
-				resultptree.put("type", "pcname");
-				resultptree.put("value", asio::ip::host_name());
+				resultptree.put(L"type", L"pcname");
+				resultptree.put(L"value", locale::conv::to_utf<wchar_t>(asio::ip::host_name(), "utf8"));
 			}
-			else if (cmd == "ls")
+			else if (cmd == L"ls")
 			{
 				bool iserror = false;
 
-				std::string path = cmdtree.get("value", "");
-				property_tree::ptree diritem_tree;
-				property_tree::ptree item;
-				if (path.empty())
+				std::wstring strPath = cmdtree.get(L"value", L"");
+				property_tree::wptree diritem_tree;
+				property_tree::wptree item;
+				if (strPath.empty())
 				{
-					item.put("type", "dir");
-					item.put("path", "desktop");
-					diritem_tree.push_back(std::make_pair("", item));
+					item.put(L"type", L"dir");
+					item.put(L"path", L"desktop");
+					diritem_tree.push_back(std::make_pair(L"", item));
 
 					item.clear();
-					item.put("type", "dir");
-					item.put("path", "c:\\");
-					diritem_tree.push_back(std::make_pair("", item));
+					item.put(L"type", L"dir");
+					item.put(L"path", L"c:\\");
+					diritem_tree.push_back(std::make_pair(L"", item));
 
 					item.clear();
-					item.put("type", "dir");
-					item.put("path", "d:\\");
-					diritem_tree.push_back(std::make_pair("", item));
+					item.put(L"type", L"dir");
+					item.put(L"path", L"d:\\");
+					diritem_tree.push_back(std::make_pair(L"", item));
 
-					item.put("type", "dir");
-					item.put("path", "e:\\");
-					diritem_tree.push_back(std::make_pair("", item));
+					item.put(L"type", L"dir");
+					item.put(L"path", L"e:\\");
+					diritem_tree.push_back(std::make_pair(L"", item));
 				}
 				else
 				{
+                    filesystem::path path(strPath);
+
 					// 在这里遍历目录
 					if (!filesystem::exists(path))
 					{
 						iserror = true;
 
-						resultptree.put("type", "error");
-						resultptree.put("value", "path not exist: " + path);
+						resultptree.put(L"type", L"error");
+						resultptree.put(L"value", L"path not exist: " + path.wstring());
 					}
 					else if (!filesystem::is_directory(path))
 					{
 						iserror = true;
 
-						resultptree.put("type", "error");
-						resultptree.put("value", "path is not directory: " + path);
+						resultptree.put(L"type", L"error");
+						resultptree.put(L"value", L"path is not directory: " + path.wstring());
 					}
 					else
 					{
@@ -138,16 +151,16 @@ private:
 							item.clear();
 							if (filesystem::is_directory(dirit->status()))
 							{
-								item.put("type", "dir");
+								item.put(L"type", L"dir");
 							}
 							else if (filesystem::is_regular_file(dirit->status()))
 							{
-								item.put("type", "file");
+								item.put(L"type", L"file");
 							}
 							else continue;
 
-							item.put("path", dirit->path().filename());
-							diritem_tree.push_back(std::make_pair("", item));
+							item.put(L"path", dirit->path().filename().wstring());
+							diritem_tree.push_back(std::make_pair(L"", item));
 						}
 					}
 				}
@@ -156,20 +169,22 @@ private:
 				{
 					//diritem_tree.push_back(std::make_pair(path, item));
 
-					resultptree.put("type", "listdir");
-					resultptree.push_back(std::make_pair("value", diritem_tree));
+					resultptree.put(L"type", L"listdir");
+                    resultptree.put(L"parent", strPath);
+					resultptree.push_back(std::make_pair(L"value", diritem_tree));
 				}
 			}
 
-			std::stringstream ss;
+			std::wstringstream ss;
 			property_tree::write_json(ss, resultptree);
 
-			std::string result{ ss.str() };
+			std::wstring utf16Result{ ss.str() };
+            std::string result = locale::conv::utf_to_utf<char>(utf16Result);
 
 			if (!result.empty())
 			{
 				std::cout << "result:\n" << result << std::endl;
-				m_response_data = std::move(ss.str());
+				m_response_data = std::move(result);
 				
 				m_response_len.append("len:");
 				m_response_len += boost::lexical_cast<std::string>(m_response_data.size());
