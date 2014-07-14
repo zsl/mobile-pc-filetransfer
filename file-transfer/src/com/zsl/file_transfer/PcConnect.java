@@ -110,11 +110,14 @@ public class PcConnect {
 			    bundle.putString("errmsg", String.format("%s: %d", "error header length", len));
 			}
 			else{
-			    BufferedInputStream inputStream = new BufferedInputStream(reader);
 			    
 			    byte[] recvdata = new byte[len];
 			    
-			    int readcount = inputStream.read(recvdata, 0, len);
+			    int readcount = 0;
+			    
+			    while (readcount < len){
+    			    readcount += reader.read(recvdata, readcount, len - readcount);
+			    }
 			    
 			    assert readcount == len;
 			    
