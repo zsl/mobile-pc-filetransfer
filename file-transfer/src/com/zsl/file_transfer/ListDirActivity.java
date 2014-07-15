@@ -1,5 +1,6 @@
 package com.zsl.file_transfer;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,25 +21,16 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ReceiverCallNotAllowedException;
 import android.content.ServiceConnection;
-import android.support.v4.app.ServiceCompat;
-import android.support.v4.widget.ListViewAutoScrollHelper;
-import android.view.Gravity;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
-import android.widget.BaseExpandableListAdapter;
-import android.widget.ExpandableListView;
-import android.widget.ExpandableListView.OnChildClickListener;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 public class ListDirActivity extends Activity {
 
@@ -109,6 +101,8 @@ public class ListDirActivity extends Activity {
                             parentDir = parentDir + "/";
                         }
                         
+                        dirName = parentDir;
+                        
                         String[] dirs = bundle.getStringArray("dirs");
                         String[] types = bundle.getStringArray("types");
                         
@@ -130,6 +124,7 @@ public class ListDirActivity extends Activity {
                     else{
                         System.out.println(String.format("errmsg: %s", bundle.getString("errmsg")));
                     }
+                    
                     break;
                 }
             }
@@ -189,6 +184,26 @@ public class ListDirActivity extends Activity {
         return true;
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item){
+        
+        if (item.getItemId() == R.id.action_back){
+            if (!dirName.isEmpty()){
+                File filePath = new File(dirName.replace('\\', '/'));
+                String parentDir = filePath.getParent();
+                
+                if (parentDir == null) parentDir = "";
+                
+                if (!parentDir.isEmpty() && !parentDir.endsWith("/")){
+                    parentDir += '/';
+                }
+                
+                networkService.ls(computerName, parentDir);
+            }
+        }
+        
+        return false;
+    }
     
     private class DirItem{
         public String type;      // dir or file
