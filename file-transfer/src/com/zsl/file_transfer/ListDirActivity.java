@@ -22,6 +22,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -29,6 +30,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -132,13 +134,14 @@ public class ListDirActivity extends Activity {
     };
     
     private ListView listView;
-    private DirListAdapter dirListAdapter = new DirListAdapter();
+    private DirListAdapter dirListAdapter;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_list_dir);
         
+        dirListAdapter = new DirListAdapter(this);
         // 初始化界面
         Intent intent = getIntent();
         Bundle bundle = intent.getExtras();
@@ -213,9 +216,17 @@ public class ListDirActivity extends Activity {
     
     private class DirListAdapter extends BaseAdapter{
 
+        LayoutInflater mInflater;
+        
         private List<DirItem> dirFiles = new ArrayList<DirItem>();
         
         public List<DirItem> GetData(){ return dirFiles; }
+        
+        public DirListAdapter(Context context){
+            super();
+            
+            mInflater = LayoutInflater.from(context);
+        }
         
         @Override
         public int getCount() {
@@ -239,17 +250,23 @@ public class ListDirActivity extends Activity {
         public View getView(int position, View convertView, ViewGroup parent) {
             // TODO Auto-generated method stub
             
-            TextView view = (TextView)convertView;
+            View view = convertView;
             if (view == null){
                 
-                view = new TextView(ListDirActivity.this);
+                //view = new TextView(ListDirActivity.this);
+                view = mInflater.inflate(R.layout.list_dir_item, parent, false);
             }
             
             DirItem item = dirFiles.get(position);
             
-            view.setText(item.name);
-            view.setTextSize(25);
-            view.setPadding(10, 0, 0, 0);
+            ImageView imgFileIcon = (ImageView)view.findViewById(R.id.img_file_icon);
+            
+            imgFileIcon.setImageResource(item.type.equals("dir") ? R.drawable.folder : R.drawable.file_icon_default);
+            
+            TextView textFileName = (TextView)view.findViewById(R.id.text_file_name);
+            textFileName.setText(item.name);
+            //view.setTextSize(25);
+            //view.setPadding(10, 0, 0, 0);
             
             view.setTag(item);
             
