@@ -41,6 +41,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>./include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -76,9 +77,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="download_session.cpp" />
+    <ClCompile Include="HardDisk.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="tcp_server.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="constdef.h" />
+    <ClInclude Include="download_session.h" />
+    <ClInclude Include="HardDisk.h" />
+    <ClInclude Include="include\util.h" />
+    <ClInclude Include="msg.h" />
     <ClInclude Include="tcp_server.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
