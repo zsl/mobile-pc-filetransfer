@@ -22,12 +22,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
@@ -155,6 +159,9 @@ public class ListDirActivity extends Activity {
         listView = (ListView)findViewById(R.id.listview_dir);
         assert listView != null;
         
+        // ×¢²áContext Menu
+        registerForContextMenu(listView);
+        
         listView.setAdapter(dirListAdapter);
         listView.setOnItemClickListener(new OnItemClickListener(){
 
@@ -178,6 +185,7 @@ public class ListDirActivity extends Activity {
         // °ó¶¨·þÎñ
         Intent service = new Intent(ListDirActivity.this, NetworkService.class); 
         bindService(service, serviceConn, Context.BIND_AUTO_CREATE);
+        
     }
 
     @Override
@@ -205,7 +213,42 @@ public class ListDirActivity extends Activity {
             }
         }
         
-        return false;
+        return super.onOptionsItemSelected(item);
+    }
+    
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo){
+        
+        super.onCreateContextMenu(menu, v, menuInfo);
+        
+        AdapterContextMenuInfo info = (AdapterContextMenuInfo)menuInfo;
+        View listItem = info.targetView;
+        
+        assert listItem != null;
+        
+        DirItem itemInfo = (DirItem)listItem.getTag();
+        int menuId = itemInfo.type.equals("dir") ? R.menu.dir_context : R.menu.file_context;
+        
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(menuId, menu);
+    }
+    
+    @Override
+    public boolean onContextItemSelected(MenuItem item){
+        AdapterContextMenuInfo menuInfo = (AdapterContextMenuInfo)item.getMenuInfo();
+        DirItem itemInfo = (DirItem)menuInfo.targetView.getTag();
+        
+        switch (item.getItemId()){
+            case R.id.action_open_dir:{
+                networkService.ls(computerName, itemInfo.fullPath);
+                break;
+            }
+            case R.id.action_download:{
+                break;
+            }
+        }
+        
+        return super.onContextItemSelected(item);
     }
     
     private class DirItem{

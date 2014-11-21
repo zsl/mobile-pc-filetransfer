@@ -19,12 +19,11 @@ public class PcinfoCmdFactory {
             
             @Override
             public PcConnect call(){
-                // TODO Auto-generated method stub
-	                
-	                PcConnect connect = new PcConnect(handler);
-	                connect.connect(pcname, port);
-	                
-	                return connect;
+                
+                PcConnect connect = new PcConnect(handler);
+                connect.connect(pcname, port);
+                
+                return connect;
             }
             
         };
@@ -35,11 +34,20 @@ public class PcinfoCmdFactory {
 
             @Override
             public void run() {
-                // TODO Auto-generated method stub
                 connect.ls(dir);
             }
             
         };
     }
     
+    public Runnable newDownloadCmd(final PcConnect connect, final String fileFullPath, final String savePath){
+        return new Runnable(){
+
+            @Override
+            public void run() {
+                connect.download(fileFullPath, savePath);
+            }
+            
+        };
+    }
 }

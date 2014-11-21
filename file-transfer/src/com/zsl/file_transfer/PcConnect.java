@@ -1,17 +1,17 @@
 package com.zsl.file_transfer;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,6 +22,7 @@ import org.json.JSONObject;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.OpenableColumns;
 import android.util.Log;
 
 public class PcConnect {
@@ -29,11 +30,19 @@ public class PcConnect {
     private Handler handler;
     private Socket socket;
     
+    private String mPcname;
+    private int mPort;
+    
+    private Map<String, String> mDownloadMap = new HashMap<String, String>();
+    
     public PcConnect(Handler handler){
         this.handler = handler;
     }
     
     public void connect(String pcname, int port){
+        
+        mPcname = pcname;
+        mPort = port;
         
         Message msg = new Message();
         msg.what = PcinfoCmdFactory.CMD_CONNECTED;
@@ -88,87 +97,119 @@ public class PcConnect {
 			jsonLsCmd.put("type", "ls");
 			jsonLsCmd.put("value", dir);
 			
-			byte[] cmddata = jsonLsCmd.toString().getBytes();
-			
-			String cmdheader = "len:";
-			cmdheader += String.valueOf(cmddata.length);
-			cmdheader += "\r\n";
-			
-			OutputStream outstream = new BufferedOutputStream(socket.getOutputStream());
-			
-			outstream.write(cmdheader.getBytes());
-			outstream.write(cmddata);
-			
-			outstream.flush();
+			writeCmd(socket.getOutputStream(), jsonLsCmd);
 			
 			InputStream reader = socket.getInputStream();
 			
-			int len = readLength(reader);
+			String jsonstr = readResponse(reader);
 			
-			if (len <= 0){
-			    bundle.putBoolean("status", false);
-			    bundle.putString("errmsg", String.format("%s: %d", "error header length", len));
-			}
-			else{
 			    
-			    byte[] recvdata = new byte[len];
-			    
-			    int readcount = 0;
-			    
-			    while (readcount < len){
-    			    readcount += reader.read(recvdata, readcount, len - readcount);
-			    }
-			    
-			    assert readcount == len;
-			    
-			    String jsonstr = new String(recvdata, "utf8");
-			    
-			    JSONObject json = new JSONObject(jsonstr);
-			    String type = json.getString("type");
-			    
-			    assert type.equals("listdir");
-			    
-			    JSONArray dirs = json.getJSONArray("value");
-			    
-			    int dir_count = dirs.length();
-			    String[] items = new String[dir_count];
-			    String[] types = new String[dir_count];
-			    
-			    
-			    for (int i = 0; i < dir_count; ++i){
-			        items[i] = dirs.getJSONObject(i).getString("path");
-			        types[i] = dirs.getJSONObject(i).getString("type");
-			    }
-			    
-			    String parentDir = json.getString("parent");
-			    
-			    // 我们的socket是阻塞模式
-			    assert parentDir.equals(dir);
-			    
-                bundle.putBoolean("status", true);
-                bundle.putString("parent", parentDir);
-                bundle.putStringArray("dirs", items);
-                bundle.putStringArray("types", types);
+		    JSONObject json = new JSONObject(jsonstr);
+		    String type = json.getString("type");
+		    
+		    assert type.equals("listdir");
+		    
+		    JSONArray dirs = json.getJSONArray("value");
+		    
+		    int dir_count = dirs.length();
+		    String[] items = new String[dir_count];
+		    String[] types = new String[dir_count];
+		    
+		    
+		    for (int i = 0; i < dir_count; ++i){
+		        items[i] = dirs.getJSONObject(i).getString("path");
+		        types[i] = dirs.getJSONObject(i).getString("type");
+		    }
+		    
+		    String parentDir = json.getString("parent");
+		    
+		    // 我们的socket是阻塞模式
+		    assert parentDir.equals(dir);
+		    
+            bundle.putBoolean("status", true);
+            bundle.putString("parent", parentDir);
+            bundle.putStringArray("dirs", items);
+            bundle.putStringArray("types", types);
                 
-			}
 			
         } catch (JSONException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            Log.e(this.getClass().getSimpleName(), "JSONException", e);
+            
             bundle.putBoolean("status", false);
             bundle.putString("errmsg", String.format("JSONException, %s", e.getMessage()));
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            Log.e(this.getClass().getSimpleName(), "IOException", e);
+            
             bundle.putBoolean("status", false);
             bundle.putString("errmsg", e.getMessage());
+        } catch (ErrCmdLengthException e) {
+            Log.e(this.getClass().getSimpleName(), "IOException", e);
+            
+            bundle.putBoolean("status", false);
+            bundle.putString("errmsg", String.format("JSONException, %s", e.getMessage()));
         }
         
         handler.sendMessage(msg);
     }
     
-    private void download(final String filename){
-        ;
+    public void download(final String fileFullPath, final String savePath){
+        try {
+            
+            InetAddress addr = InetAddress.getByName(mPcname);
+            SocketAddress svrendpoint = new InetSocketAddress(addr, mPort);
+            
+            Socket sockDownload = new Socket();
+            
+            sockDownload.connect(svrendpoint);
+            
+            // 连接成功后，就开始下载吧
+			JSONObject jsonLsCmd = new JSONObject();
+			jsonLsCmd.put("type", "download");
+			jsonLsCmd.put("value", fileFullPath);
+			
+			writeCmd(sockDownload.getOutputStream(),jsonLsCmd);
+			
+			InputStream reader = sockDownload.getInputStream();
+			String jsonstr = readResponse(reader);
+			
+			JSONObject json = new JSONObject(jsonstr);
+			
+			String type = json.getString("type");
+			
+			assert type.equals("download");
+			
+			String fileName = json.getString("value").replace('\\', '/');
+			String sendFileName = fileFullPath.replace('\\', '/');
+			
+			assert fileName == sendFileName;
+			
+			long fileLen = json.getLong("filelen");
+			byte[] buf = new byte[4096];
+			
+			OutputStream out = new FileOutputStream(savePath);
+			
+			long leftLen = fileLen;
+			while (leftLen > 0){
+			    int readLen = reader.read(buf, 0, buf.length);
+			    out.write(buf, 0, readLen);
+			    
+			    leftLen -= readLen;
+			}
+			
+			out.flush();
+			out.close();
+			// 最后关闭套接字
+			sockDownload.close();
+            
+        } catch (UnknownHostException e) {
+            Log.e(this.getClass().getSimpleName(), "download: UnknownHostException", e);
+        } catch (IOException e) {
+            Log.e(this.getClass().getSimpleName(), "download: IOException", e);
+        } catch (JSONException e) {
+            Log.e(this.getClass().getSimpleName(), "download: JSONException", e);
+        } catch (ErrCmdLengthException e) {
+            Log.e(this.getClass().getSimpleName(), "download: ErrCmdLengthException", e);
+        }
     }
 
     private int readLength(InputStream reader) throws IOException{
@@ -196,6 +237,52 @@ public class PcConnect {
         }
         else{
             return -1;
+        }
+    }
+    
+    private void writeCmd(OutputStream out, JSONObject json) throws IOException{
+        
+		byte[] cmddata = json.toString().getBytes();
+		
+		String cmdheader = "len:";
+		cmdheader += String.valueOf(cmddata.length);
+		cmdheader += "\r\n";
+		
+		out.write(cmdheader.getBytes());
+		out.write(cmddata);
+		
+		out.flush();
+    }
+    
+    private String readResponse(InputStream in) throws ErrCmdLengthException, IOException{
+        
+        int len = readLength(in);
+        
+        if (len <= 0){
+            throw new ErrCmdLengthException("err length");
+        }
+        else{
+            
+            byte[] recvdata = new byte[len];
+            
+            int readcount = 0;
+            
+            while (readcount < len){
+                readcount += in.read(recvdata, readcount, len - readcount);
+            }
+            
+            assert readcount == len;
+            
+            return new String(recvdata, "utf8");
+        }
+    }
+    
+    class ErrCmdLengthException extends Exception{
+
+        private static final long serialVersionUID = 1L;
+
+        public ErrCmdLengthException(String msg){
+            super(msg);
         }
     }
 }

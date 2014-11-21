@@ -22,11 +22,14 @@ public class NetworkService extends Service {
     // 发送广播的Action
     public static String NETWORK_ACTION = "com.zsl.file_transfer.NETWORK_ACTION";
     
+    private static int DOWN_FILE_COUNT = 3;
+    
     private PcConnect connect;
     private Map<String, PcConnect> connectMap = new HashMap<String, PcConnect>();
     private Future<PcConnect> futureConnect; // 用于接收线程的结果
     private PcinfoCmdFactory cmdfactory;
     private ExecutorService pool;
+    private ExecutorService downloadPool;
     
     private Handler handler = new Handler(new DirCmdHandlerCallback());
     
@@ -71,10 +74,23 @@ public class NetworkService extends Service {
         Log.i(this.getClass().getSimpleName(), String.format("proc ls: %s/%s", computerName, dir));
     }
     
+    public void download(String computerName, String fileFullPath, String savePath){
+        PcConnect con = connectMap.get(computerName);
+        if (con == null){
+            // 报告错误，还没有连接
+        }
+        else{
+            downloadPool.submit(cmdfactory.newDownloadCmd(con, fileFullPath, savePath));
+        }
+        
+        Log.i(this.getClass().getSimpleName(), String.format("proc download: %s/%s", computerName, fileFullPath));
+    }
+    
     @Override
     public void onCreate(){
         // 创建线程池
         pool = Executors.newSingleThreadExecutor(new DeamonThreadFactory());
+        downloadPool = Executors.newFixedThreadPool(DOWN_FILE_COUNT);
         
         cmdfactory = new PcinfoCmdFactory(handler);
     }
